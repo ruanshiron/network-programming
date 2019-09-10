@@ -6,6 +6,7 @@ struct account
 {
     char username[30];
     char password[30];
+    int isLogin;
     int status;
 };
 
@@ -79,7 +80,7 @@ void read(char * filename) {
     else {
         do {
             struct account temp;
-            temp.status = 0;
+            temp.isLogin = 0;
             if (fscanf(f, "%s %s %d", temp.username, temp.password, &temp.status) == EOF) break;
             else {
                 struct node * t = makeNode(temp);
@@ -130,61 +131,92 @@ void updateTo(char * filename) {
 void Register() {
     printf("-----------REGISTER-------\n"); 
     struct account temp;
-    temp.status = 0;
+    temp.status = 1;
     printf("username:");
     scanf("%s%*c", temp.username);
-    printf("password:");
-    scanf("%s%*c", temp.password);
     if (!existedUsername(temp.username)) {
+        printf("password:");
+        scanf("%s%*c", temp.password);
         struct node * t = makeNode(temp);
         add(t);
         appendTo("account.txt", temp);
+
+        printf("Successful registration\n\n");
+    } else {
+        printf("Account existed\n\n");
     }
+    
 }
 
 void SignIn() {
     printf("-----------SIGN-IN-------\n"); 
     struct account temp;
-    temp.status = 0;
     printf("username:");
     scanf("%s%*c", temp.username);
-    printf("password:");
-    scanf("%s%*c", temp.password);
-    struct node * t = auth(temp.username, temp.password);
-    if (!t) {
-        printf("WRONG username or password\n");
-    } else {
-        t->data.status = 1;
-        updateTo("account.txt");
+
+    struct node * u = existedUsername(temp.username);
+
+    if (!u) {
+        printf("Cannot find account\n\n");
+        return;
+    } else if (u->data.status == 0) {
+        printf("Account is blocked\n\n");
+        return;
     }
 
+    int error_times = 0;
+
+    do {
+        printf("password:");
+        scanf("%s%*c", temp.password);
+        struct node * t = auth(temp.username, temp.password);
+        if (!t) {
+            printf("Password is incorrect\n\n");
+            error_times ++;
+        } else {
+            t->data.isLogin = 1;
+            updateTo("account.txt");
+            printf("Hello %s\n\n", temp.username);
+            return;
+        }
+    } while (error_times<3);
+
+    u->data.status = 0;
+    updateTo("account.txt");
+    printf("Password is incorrect. Account is blocked\n\n");
+    
 }
 
 void Search() {
-    printf("-----------SIGN-IN-------\n"); 
+    printf("-----------SEARCH-------\n"); 
     struct account temp;
     temp.status = 0;
     printf("username:");
     scanf("%s%*c", temp.username);
     struct node * t = existedUsername(temp.username);
     if (t) {
-        printf("%s %d\n", t->data.username, t->data.status);
+        if (t->data.status) {
+            printf("Account is active\n\n");
+        } else {
+            printf("Account is blocked\n\n");
+        }
+    } else {
+        printf("Cannot find account\n\n");
     }
 }
 
 void SignOut() {
-    printf("-----------SIGN-IN-------\n"); 
+    printf("-----------SIGN-OUT-------\n"); 
     struct account temp;
     temp.status = 0;
     printf("username:");
     scanf("%s%*c", temp.username);
     struct node * t = existedUsername(temp.username);
     if (t) {
-        if (t->data.status == 0) printf("You did not Signed In");
+        if (t->data.isLogin == 0) printf("Account is not sign in\n\n");
         else {
-            t->data.status = 0;
-            printf("Signed Out\n");
-            updateTo("account.txt");
+            t->data.isLogin = 0;
+            printf("Goodbye %s\n\n", t->data.username);
         }
     }
 }
