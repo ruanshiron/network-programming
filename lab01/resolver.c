@@ -9,16 +9,8 @@
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <arpa/inet.h> 
-  
-// Returns hostname for the local computer 
-void checkHostName(int hostname) 
-{ 
-    if (hostname == -1) 
-    { 
-        perror("gethostname"); 
-        exit(1); 
-    } 
-} 
+#include <string.h>
+#include <ctype.h>
   
 // Returns host information corresponding to host name 
 void checkHostEntry(struct hostent * hostentry) 
@@ -29,54 +21,97 @@ void checkHostEntry(struct hostent * hostentry)
         exit(1); 
     } 
 } 
-  
-// Converts space-delimited IPv4 addresses 
-// to dotted-decimal format 
-void checkIPbuffer(char *IPbuffer) 
-{ 
-    if (NULL == IPbuffer) 
-    { 
-        perror("inet_ntoa"); 
-        exit(1); 
-    } 
-} 
-  
-// Driver code 
-int main() 
-{ 
+
+int isNumber(const char * str) {
     int i;
-    char hostbuffer[256]; 
-    char *IPbuffer; 
+    for (i=0; i<strlen(str); i++) {
+        if (!isdigit(str[i])) return 0;
+    }
+
+    return 1;
+}
+
+int isIP(const char * IPBuffer) 
+{
+    char buffer[256];
+    strcpy(buffer, IPBuffer);
+
+    const char dot[2] = ".";
+    char *token;
+
+    token = strtok(buffer, dot);
+
+    while (token != NULL) {
+
+        if (!isNumber(token)) return 0;
+        else if (atoi(token)<0 || atoi(token)>255) return -1; 
+
+        token = strtok(NULL, dot);
+    }
+
+    return 1;
+}
+
+int main(int argc, char const *argv[])
+{
+    if (argc < 2) {
+        perror("no input string");
+        return 1;
+    }
+
+    int i;
+
     struct hostent *host_entry; 
     struct in_addr **addr_list;
-    int hostname; 
 
-    host_entry = gethostbyname("vietnamnet.vn"); 
-    checkHostEntry(host_entry); 
-  
-    IPbuffer = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0])); 
-  
-    printf("Hostname: %s\n", hostbuffer); 
-    printf("Host IP: %s\n", IPbuffer); 
+    if (!isIP(argv[1])) {
+        host_entry = gethostbyname(argv[1]); 
+        checkHostEntry(host_entry); 
 
-    addr_list = (struct in_addr **)host_entry->h_addr_list;
-    for(i = 0; addr_list[i] != NULL; i++) {
-        printf("\t%s ", inet_ntoa(*addr_list[i]));
+        if (host_entry==NULL) {
+            printf("Not found information\n");
+            return 0;    
+        }
+
+        addr_list = (struct in_addr **)host_entry->h_addr_list;
+        for(i = 0; addr_list[i] != NULL; i++) {
+            if (i==0) printf("Official IP: ");
+            else printf("Alias: \n");
+            printf("\t%s\n", inet_ntoa(*addr_list[i]));
+        }
+        printf("\n");
+
+        return 0;
+    } else if (isIP(argv[1]) ==  -1) {
+        printf("Not found information\n");
+        return 0;    
+    }
+
+    struct in_addr ipv4addr;
+
+    inet_pton(AF_INET, argv[1], &ipv4addr);
+    host_entry = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
+
+    if (host_entry==NULL) {
+        printf("Not found information\n");
+        return 0;    
+    }
+
+    printf("Official name: %s\n", host_entry->h_name);
+
+    char ** aliases = host_entry->h_aliases;
+    for(i = 0; aliases[i] != NULL; i++) {
+        printf("Alias name: \n");
+        printf("\t%s\n", aliases[i]);
     }
     printf("\n");
 
-
-    struct hostent *he;
-    struct in_addr ipv4addr;
-    struct in6_addr ipv6addr;
-
-    inet_pton(AF_INET, IPbuffer, &ipv4addr);
-    he = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
-    if (he!=NULL) printf("Host name: %s\n", he->h_name);
-
-    inet_pton(AF_INET6, "2001:db8:63b3:1::beef", &ipv6addr);
-    he = gethostbyaddr(&ipv6addr, sizeof ipv6addr, AF_INET6);
-    if (he!=NULL) printf("Host name: %s\n", he->h_name);
+    // struct in6_addr ipv6addr;
+    // inet_pton(AF_INET6, "2001:db8:63b3:1::beef", &ipv6addr);
+    // host_entry = gethostbyaddr(&ipv6addr, sizeof ipv6addr, AF_INET6);
+    // if (host_entry!=NULL) printf("Host name: %s\n", host_entry->h_name);
   
-    return 0; 
-} 
+    return 0;
+
+    
+}
