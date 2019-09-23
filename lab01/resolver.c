@@ -44,26 +44,39 @@ void checkIPbuffer(char *IPbuffer)
 // Driver code 
 int main() 
 { 
+    int i;
     char hostbuffer[256]; 
     char *IPbuffer; 
     struct hostent *host_entry; 
+    struct in_addr **addr_list;
     int hostname; 
-  
-    // To retrieve hostname 
-    hostname = gethostname(hostbuffer, sizeof(hostbuffer)); 
-    checkHostName(hostname); 
-  
-    // To retrieve host information 
-    host_entry = gethostbyname(hostbuffer); 
+
+    host_entry = gethostbyname("vietnamnet.vn"); 
     checkHostEntry(host_entry); 
   
-    // To convert an Internet network 
-    // address into ASCII string 
-    IPbuffer = inet_ntoa(*((struct in_addr*) 
-                           host_entry->h_addr_list[0])); 
+    IPbuffer = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0])); 
   
     printf("Hostname: %s\n", hostbuffer); 
-    printf("Host IP: %s", IPbuffer); 
+    printf("Host IP: %s\n", IPbuffer); 
+
+    addr_list = (struct in_addr **)host_entry->h_addr_list;
+    for(i = 0; addr_list[i] != NULL; i++) {
+        printf("\t%s ", inet_ntoa(*addr_list[i]));
+    }
+    printf("\n");
+
+
+    struct hostent *he;
+    struct in_addr ipv4addr;
+    struct in6_addr ipv6addr;
+
+    inet_pton(AF_INET, IPbuffer, &ipv4addr);
+    he = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
+    if (he!=NULL) printf("Host name: %s\n", he->h_name);
+
+    inet_pton(AF_INET6, "2001:db8:63b3:1::beef", &ipv6addr);
+    he = gethostbyaddr(&ipv6addr, sizeof ipv6addr, AF_INET6);
+    if (he!=NULL) printf("Host name: %s\n", he->h_name);
   
     return 0; 
 } 
