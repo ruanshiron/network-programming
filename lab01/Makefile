@@ -1,9 +1,9 @@
-TARGET=auth
+TARGET=resolver
 
 CC=gcc
 
-main: auth.c
-	$(CC) -o $(TARGET) auth.c
+main: $(TARGET).c
+	$(CC) -o $(TARGET) $(TARGET).c
 run: main
 	./$(TARGET) 
 clean:
