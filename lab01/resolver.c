@@ -17,7 +17,7 @@ void checkHostEntry(struct hostent * hostentry)
 { 
     if (hostentry == NULL) 
     { 
-        perror("gethostbyname"); 
+        printf("Not found information\n");
         exit(1); 
     } 
 } 
@@ -44,7 +44,7 @@ int isIP(const char * IPBuffer)
     while (token != NULL) {
 
         if (!isNumber(token)) return 0;
-        else if (atoi(token)<0 || atoi(token)>255) return -1; 
+        else if (atoi(token)<0 || atoi(token)>255) return 0; 
 
         token = strtok(NULL, dot);
     }
@@ -68,11 +68,6 @@ int main(int argc, char const *argv[])
         host_entry = gethostbyname(argv[1]); 
         checkHostEntry(host_entry); 
 
-        if (host_entry==NULL) {
-            printf("Not found information\n");
-            return 0;    
-        }
-
         addr_list = (struct in_addr **)host_entry->h_addr_list;
         for(i = 0; addr_list[i] != NULL; i++) {
             if (i==0) printf("Official IP: ");
@@ -82,20 +77,14 @@ int main(int argc, char const *argv[])
         printf("\n");
 
         return 0;
-    } else if (isIP(argv[1]) ==  -1) {
-        printf("Not found information\n");
-        return 0;    
-    }
+    } 
 
     struct in_addr ipv4addr;
 
     inet_pton(AF_INET, argv[1], &ipv4addr);
     host_entry = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
 
-    if (host_entry==NULL) {
-        printf("Not found information\n");
-        return 0;    
-    }
+    checkHostEntry(host_entry);
 
     printf("Official name: %s\n", host_entry->h_name);
 
