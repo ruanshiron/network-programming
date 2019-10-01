@@ -8,8 +8,19 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <netdb.h>
+#include <ctype.h>
 
 #define MAXLINE 1024
+
+
+int isNumber(const char * str) {
+    int i;
+    for (i=0; i<strlen(str); i++) {
+        if (!isdigit(str[i])) return 0;
+    }
+
+    return 1;
+}
 
 //use this to check if string is IP address
 int isValidIpAddress(char ipAddress[])
@@ -18,8 +29,24 @@ int isValidIpAddress(char ipAddress[])
     int result = inet_pton(AF_INET, ipAddress, &(sa.sin_addr));
     if (result != 0)
         return 1;
-    else
-        return 0;
+    
+    char buffer[256];
+    strcpy(buffer, ipAddress);
+
+    const char dot[2] = ".";
+    char *token;
+
+    token = strtok(buffer, dot);
+
+    while (token != NULL) {
+
+        if (!isNumber(token)) return 0;
+        else if (atoi(token)<0 || atoi(token)>255) return -1; 
+
+        token = strtok(NULL, dot);
+    }
+
+    return 1;
 }
 
 //convert from IP to address
@@ -37,7 +64,7 @@ char *fromIpToAddress(const char* ip)
     if (host_entry == NULL)
     {
         herror("Error");
-        return "Error: IP address is invalid\n";
+        return "Not found information\n";
     }
     else
     {
@@ -68,7 +95,7 @@ char *fromAddressToIp(const char* address)
     if ((host_entry = gethostbyname(address)) == NULL)
     {
         herror("Error");
-        return "Error\n";
+        return "Not found information\n";
     }
     else
     {
@@ -142,7 +169,7 @@ int main(int argc, char const *argv[])
         buffer[n - 1] = '\0';
         printf("Recieve form Client : %s\n", buffer);
         //check if requested string is a ip address
-        if (isValidIpAddress(buffer))
+        if (isValidIpAddress(buffer) == 1)
         {
             printf("IP to address: Processing ...\n");
             n = sendto(sockfd, (const char *)fromIpToAddress(buffer),
@@ -150,12 +177,18 @@ int main(int argc, char const *argv[])
                        MSG_CONFIRM, (const struct sockaddr *)&cliaddr,
                        len);
         }
-        else
+        else if (isValidIpAddress(buffer) == 0)
         {
             printf("Address to IP: Processing ...\n");
             n = sendto(sockfd, (const char *)fromAddressToIp(buffer),
                        strlen(fromAddressToIp(buffer)),
                        MSG_CONFIRM, (const struct sockaddr *)&cliaddr,
+                       len);
+        } else if (isValidIpAddress(buffer) == -1) {
+            const char * invalidIPstr = "IP Address is invalid";
+            printf("%s\n", invalidIPstr);
+            n = sendto(sockfd, invalidIPstr, strlen(invalidIPstr),
+                        MSG_CONFIRM, (const struct sockaddr *)&cliaddr,
                        len);
         }
         if (n < 0)
