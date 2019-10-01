@@ -102,8 +102,8 @@ int main(int argc, char const *argv[])
             close(sockfd);
             return 0;
         }
-        buffer[n-1] = '\0';
-        printf("Client request: \"%s\"\n", buffer);
+        buffer[n] = '\0';
+        printf("Client request: %s", buffer);
         result_len = strlen(resultMessage(buffer, strlen(buffer)));
         n = sendto(sockfd, (const char *)resultMessage(buffer, strlen(buffer)),
                    result_len,

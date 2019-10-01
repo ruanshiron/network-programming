@@ -9,7 +9,7 @@
 
 #define MAXLINE 1024
 
-int isValidIpAddress(char *ipAddress)
+int isValidIpAddress(const char *ipAddress)
 {
     struct sockaddr_in sa;
     int result = inet_pton(AF_INET, ipAddress, &(sa.sin_addr));
@@ -53,13 +53,13 @@ int main(int argc, char const *argv[])
     //communicate with server
     while (1)
     {
-        printf("\nInsert string to send: ");
+        printf("\nString to send: ");
         memset(buffer, '\0', (strlen(buffer) + 1));
         fgets(buffer, MAXLINE, stdin);
         // if input string is empty, exit;
         if (strcmp(buffer, "\n") == 0)
         {
-            printf("Closing now\n");
+            printf("Exit\n");
             close(sockfd);
             return 0;
             exit(1);
@@ -71,7 +71,7 @@ int main(int argc, char const *argv[])
                MSG_CONFIRM, (const struct sockaddr *)&servaddr,
                sizeof(servaddr));
 
-        printf("Request sent.\n");
+        printf("Sent.\n");
         //recieve from server
         n = recvfrom(sockfd, (char *)buffer, MAXLINE,
                      MSG_WAITALL, (struct sockaddr *)&servaddr,
