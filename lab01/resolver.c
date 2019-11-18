@@ -44,7 +44,7 @@ int isIP(const char * IPBuffer)
     while (token != NULL) {
 
         if (!isNumber(token)) return 0;
-        else if (atoi(token)<0 || atoi(token)>255) return 0; 
+        else if (atoi(token)<0 || atoi(token)>255) return -1; 
 
         token = strtok(NULL, dot);
     }
@@ -77,7 +77,11 @@ int main(int argc, char const *argv[])
         printf("\n");
 
         return 0;
-    } 
+    } else if (isIP(argv[1])==-1) {
+        printf("IP Address is invalid\n");
+
+        return 0;
+    }
 
     struct in_addr ipv4addr;
 

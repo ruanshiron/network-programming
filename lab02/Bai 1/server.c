@@ -17,19 +17,19 @@ char *resultMessage(char buffer[], int len)
     for (int i = 0; i < len - 1; i++)
     {
         char ch = buffer[i];
-        //check if character is number
+        //is number
         if (ch >= '0' && ch <= '9')
         {
             number[pos_1] = ch;
             pos_1++;
         }
-        //check if character is alphabet;
+        //is alphabet;
         else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
         {
             alpha[pos_2] = ch;
             pos_2++;
         }
-        //character is special symbol
+        //is special symbol
         else
         {
             isError = 1;
@@ -84,7 +84,7 @@ int main(int argc, char const *argv[])
     if (bind(sockfd, (const struct sockaddr *)&servaddr,
              sizeof(struct sockaddr)) == -1)
     {
-        perror("bind failed");
+        perror("Bind Failed");
         exit(EXIT_FAILURE);
     }
 
@@ -103,7 +103,7 @@ int main(int argc, char const *argv[])
             return 0;
         }
         buffer[n] = '\0';
-        printf("Recieve form Client : %s\n", buffer);
+        printf("Client request: %s", buffer);
         result_len = strlen(resultMessage(buffer, strlen(buffer)));
         n = sendto(sockfd, (const char *)resultMessage(buffer, strlen(buffer)),
                    result_len,
@@ -115,7 +115,7 @@ int main(int argc, char const *argv[])
             close(sockfd);
             return 0;
         }
-        printf("Result sent.\n");
+        printf("Responded.\n");
     }
     return 0;
 }
