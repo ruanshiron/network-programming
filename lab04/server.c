@@ -93,7 +93,6 @@ void doAuthenticated(int clientSocket)
 			recv_data[bytes_received] = '\0';
 			printf("\nReceive: %s ", recv_data);
 		}
-
 		//echo to client
 		bytes_sent = send(clientSocket, recv_data, bytes_received, 0); /* send to the client welcome message */
 	}
@@ -106,6 +105,7 @@ int authentication(int max_auth_error, int clientSocket)
 
 	while (1)
 	{
+		bytes_sent = send(clientSocket, "Enter your username", sizeof "Enter your username", 0);
 		//receives username from client
 		bytes_received = recv(clientSocket, recv_data, BUFF_SIZE - 1, 0); //blocking
 		if (bytes_received <= 0)
@@ -113,15 +113,20 @@ int authentication(int max_auth_error, int clientSocket)
 			printf("\nConnection closed");
 			return 0;
 		}
+		printf("[%s]\n", recv_data);
 
 		recv_data[bytes_received] = '\0';
 
 		struct account *current_account = existID(recv_data);
 
-		if (current_account)
+		if ((current_account)&&(current_account->status==0)) 
+		{
+			bytes_sent = send(clientSocket, "Account has been locked", sizeof "Account has been locked", 0);
+		}
+		else if (current_account)
 		{
 			//echo to client
-			bytes_sent = send(clientSocket, "User existed\n", sizeof "User existed\n", 0); /* send to the client welcome message */
+			bytes_sent = send(clientSocket, "User existed", sizeof "User existed", 0); /* send to the client welcome message */
 
 			int error_time = 0;
 			while (1)
@@ -129,11 +134,12 @@ int authentication(int max_auth_error, int clientSocket)
 				if (error_time >= max_auth_error)
 				{
 					//echo to client
-					bytes_sent = send(clientSocket, "status -1\n", sizeof "status -1\n", 0); /* send to the client welcome message */
-					current_account->status = -1;
+					bytes_sent = send(clientSocket, "status 0", sizeof "status 0", 0); /* send to the client welcome message */
+					current_account->status = 0;
 					updateAccountData();
 					break;
 				}
+				bytes_sent = send(clientSocket, "Enter your password", sizeof "Enter your password", 0);
 				//receives password from client
 				bytes_received = recv(clientSocket, recv_data, BUFF_SIZE - 1, 0); //blocking
 				if (bytes_received <= 0)
@@ -147,20 +153,20 @@ int authentication(int max_auth_error, int clientSocket)
 				if (verifyPassword(current_account, recv_data))
 				{
 					//echo to client
-					bytes_sent = send(clientSocket, "Logged In\n", sizeof "Logged In\n", 0); /* send to the client welcome message */
+					bytes_sent = send(clientSocket, "Logged In", sizeof "Logged In", 0); /* send to the client welcome message */
 					doAuthenticated(clientSocket);
 					break;
 				}
 				else
 				{
-					bytes_sent = send(clientSocket, "Wrong Password\n", sizeof "Wrong Password\n", 0); /* send to the client welcome message */
+					bytes_sent = send(clientSocket, "Wrong Password", sizeof "Wrong Password", 0); /* send to the client welcome message */
 					error_time++;
 				}
 			}
 		}
 		else
 		{
-			bytes_sent = send(clientSocket, "User not existed\n", sizeof "User existed\n", 0); /* send to the client welcome message */
+			bytes_sent = send(clientSocket, "User not existed", sizeof "User not existed", 0); /* send to the client welcome message */
 		}
 	}
 }
@@ -214,7 +220,7 @@ void initAccountData()
 	fclose(f);
 }
 
-int main()
+int main(int argc, char const *argv[])
 {
 	initAccountData();
 
@@ -223,7 +229,10 @@ int main()
 	struct sockaddr_in serverAddr;
 
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(8080);
+
+	int port = atoi(argv[1]);
+
+	serverAddr.sin_port = htons(port);
 	serverAddr.sin_addr.s_addr = htons(INADDR_ANY);
 
 	if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
@@ -232,7 +241,7 @@ int main()
 	if (listen(serverSocket, 1024) == -1)
 		return 0;
 
-	printf("Server started listenting on port 8080 ...........\n");
+	printf("Server started listenting on port %d ...........\n", port);
 
 	while (1)
 	{
@@ -247,4 +256,5 @@ int main()
 
 	for (int i = 0; i < clientCount; i++)
 		pthread_join(thread[i], NULL);
+
 }
